@@ -1,25 +1,132 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
 output: 
-  html_document:
-    keep_md: true
+html_document:
+keep_md: true
 ---
 
+```{r echo = TRUE}
+# load all packages used in this exploratory analysis
+library(knitr)
+library(scales)
+library(ggplot2)
+library(xtable)
+
+```
 
 ## Loading and preprocessing the data
 
+```{r echo = TRUE}
+# load data
+data <- read.csv("activity.csv")
 
+# Transform date attribute from Factor to Date 
+data$date <- as.Date(data$date)
+
+```
 
 ## What is mean total number of steps taken per day?
 
+1.- Calculate the total number of steps taken per day
 
+2.- If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+
+3.- Calculate and report the mean and median of the total number of steps taken per day
+
+```{r echo = TRUE} 
+# remove NA in data
+data2 <- data[!is.na(data$steps),]
+
+# Calculate the total number of steps taken per day
+steps_by_day <- tapply(data2$steps, data2$date,  sum)
+steps_by_day
+
+# Make a histogram of the total number of steps taken each day
+hist(steps_by_day, main = "Histogram of the total number of steps taken each day", xlab = "Steps by day")
+
+```
+
+The mean of the total number of steps taken per day is
+```{r echo=TRUE, results="asis"}
+mean(steps_by_day, na.rm = TRUE)
+```
+
+The median of the total number of steps taken per day is
+```{r echo=TRUE, results="asis"}
+median(steps_by_day, na.rm = TRUE)
+```
 
 ## What is the average daily activity pattern?
 
+Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r}
+steps_by_interval <- tapply(data2$steps, data2$interval,  mean)
 
+ plot(row.names(steps_by_interval), steps_by_interval, type = 'l', main = "Average number of steps taken by interval", xlab = "5-minute interval", ylab = "Averaged across all days")
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+names(which.max(steps_by_interval))
+
+```
 
 ## Imputing missing values
 
+Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
+```{r echo=TRUE}
+number_missing_values <- sum(is.na(data$steps))
+```
+
+The total number of rows with NAs is `r number_missing_values`
+
+Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r}
+data_fill <- data
+ #The data is filled by mean value
+data_fill[is.na(data_fill$steps),]$steps <- mean(data$steps, na.rm = TRUE)
+
+```
+
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. 
+```{r}
+# Calculate the total number of steps taken per day
+steps_by_day <- tapply(data_fill$steps, data_fill$date,  sum)
+
+# Make a histogram of the total number of steps taken each day
+hist(steps_by_day, main = "Histogram of the total number of steps taken each day - NA repleced", xlab = "Steps by day")
+```
+
+The mean of the total number of steps taken per day is
+```{r echo=TRUE, results="asis"}
+mean(steps_by_day, na.rm = TRUE)
+```
+
+The median of the total number of steps taken per day is
+```{r echo=TRUE, results="asis"}
+median(steps_by_day, na.rm = TRUE)
+```
+
+Do these values differ from the estimates from the first part of the assignment? 
+No, the values are not very differents.
+
+What is the impact of imputing missing data on the estimates of the total daily number of steps?
+Because I used the mean of values the data don't have many variation, may be with another method the changes can be more serious. 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+```{r}
+week_days <- c('lunes', 'martes', 'miércoles', 'jueves', 'viernes')
+data2$week_day <- factor((weekdays(data2$date) %in% week_days), levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
+summary(data2)
+```
+
+Make a panel plot containing a time series plot 
+
+```{r}
+qplot(interval, steps, data=data2, stat="summary", fun.y="mean", geom="line", ) + facet_wrap( ~ week_day, nrow = 2, ncol = 1) 
+
+```
